@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Playtopia Crafting & Splice Calculator</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-hover: #263349;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --emerald: #10b981;
+      --warn: #f59e0b;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body {
+      margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+      line-height: 1.5;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      text-align: center; padding: 16px 0 24px; border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    header h1 { margin: 0 0 6px; font-size: 1.5rem; color: var(--accent); }
+    header p { margin: 0; font-size: 0.9rem; color: var(--muted); }
+
+    .controls {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    input[type="text"], input[type="number"] {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; outline: none;
+    }
+    input[type="text"] { flex: 1; min-width: 220px; }
+    input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
+
+    .calculator {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px; margin-bottom: 24px;
+    }
+    .calc-header {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
+    }
+    .calc-title { font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+    .qty-box { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+    .qty-box input { width: 80px; text-align: center; }
+
+    .grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 680px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.55); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px;
+    }
+    .panel h3 {
+      margin: 0 0 10px; font-size: 0.9rem; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--muted);
+    }
+    .base-list { list-style: none; padding: 0; margin: 0; }
+    .base-list li {
+      display: flex; justify-content: space-between; padding: 6px 0;
+      border-bottom: 1px dashed var(--border); font-size: 0.95rem;
+    }
+    .base-list li:last-child { border-bottom: none; }
+    .count { font-weight: 700; color: var(--emerald); }
+
+    .tree ul { list-style: none; padding-left: 18px; margin: 4px 0; border-left: 1px dashed var(--border); }
+    .tree > ul { padding-left: 0; border-left: none; }
+    .tree li { margin: 4px 0; font-size: 0.9rem; }
+
+    .recipe-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px; cursor: pointer; transition: 0.15s;
+    }
+    .card:hover { background: var(--card-hover); border-color: var(--accent); }
+    .card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .item-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 6px; }
+    .ingredients { font-size: 0.85rem; color: var(--muted); }
+    .badge {
+      font-size: 0.72rem; padding: 2px 6px; border-radius: 6px; font-weight: 600;
+      white-space: nowrap; height: fit-content;
+    }
+    .badge-eme { background: rgba(16, 185, 129, 0.18); color: var(--emerald); }
+    .badge-time { background: rgba(245, 158, 11, 0.18); color: var(--warn); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Playtopia Crafting & Splice Helper</h1>
+      <p>Klik item apa saja untuk melihat pohon splice & total bahan dasar dari akar</p>
+    </header>
+
+    <div class="calculator" id="calculator">
+      <div class="calc-header">
+        <div class="calc-title" id="selectedTitle">Pilih item di bawah untuk menghitung</div>
+        <div class="qty-box">
+          <label for="qtyInput">Target Jumlah:</label>
+          <input type="number" id="qtyInput" min="1" value="1" />
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Total Bahan Dasar (Akar)</h3>
+          <ul class="base-list" id="baseSummary"></ul>
+        </div>
+        <div class="panel">
+          <h3>Alur Pohon Splice</h3>
+          <div class="tree" id="treeView"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Cari nama item atau bahan (misal: Wooden Chest, Mystic, Glass)..." />
+    </div>
+
+    <div class="recipe-grid" id="recipeGrid"></div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // DATA RESEP PLAYTOPIA (Edit bagian ini jika ada update versi / resep baru)
+    // =========================================================================
+    const RECIPES = {
+      "Aquarium Block": { items: ["Water Block", "Glass Block"] },
+      "Aquarium Panel": { items: ["Water Block", "Glass Wall Panel"] },
+      "Arrow Path Finder": { items: ["Arrow Pointer", "Checkpoint"], note: "8 hrs", type: "time" },
+      "Arrow Pointer": { items: ["Bush", "Wooden Sign"] },
+      "Banana Boomerang": { items: ["Glass Door", "Wooden Chest"], note: "Emerald Source", type: "eme" },
+      "Basalt": { items: ["Gravel Rock", "Stone"], note: "Emerald Source (13%)", type: "eme" },
+      "Bed": { items: ["Wooden Fence", "Wooden Table"] },
+      "Bookshelf": { items: ["Wooden Chest", "Couch"] },
+      "Bridge": { items: ["Stairs", "Arrow Path Finder"] },
+      "Bush": { items: ["Flora", "Soil Background"] },
+      "Cactus": { items: ["Flora", "Mushroom Bump"] },
+      "Camping Tent": { items: ["Fireplace", "Couch"] },
+      "Chandelier": { items: ["Glass Block", "Fireplace"], note: "Emerald Source (6 hrs)", type: "eme" },
+      "Chi Portal": { items: ["Dungeon Door", "Glass Door"] },
+      "Couch": { items: ["Wooden Chair", "Bed"], note: "8 hrs", type: "time" },
+      "Display Frame": { items: ["Wooden Crate", "Painting"] },
+      "Dungeon Bricks": { items: ["Basalt", "Gravel"] },
+      "Dungeon Door": { items: ["Window Panel", "Wooden Entrance"] },
+      "Dungeon Entrance": { items: ["Flare", "Wooden Entrance"] },
+      "Dungeon Platform": { items: ["Wooden Platform", "Glass Wall Panel"] },
+      "Dungeon Wall": { items: ["Dungeon Bricks", "Wooden Wall Panel"] },
+      "Fireplace": { items: ["Flare", "Wooden Log"] },
+      "Flare": { items: ["Wooden Sign", "Magma"] },
+      "Flora": { items: ["Grass", "Soil Background"] },
+      "Glass Block": { items: ["Basalt", "Glass Wall Panel"] },
+      "Glass Door": { items: ["Window Panel", "Dungeon Door"] },
+      "Glass Entrance": { items: ["Glass Block", "Dungeon Entrance"] },
+      "Glass Wall Panel": { items: ["Stone", "Magma"] },
+      "Gravel": { items: ["Magma", "Soil Background"] },
+      "Hanging Lantern": { items: ["Fireplace", "Chandelier"] },
+      "Jade Block": { items: ["Lily Pad", "Arrow Path Finder", "??? (3rd Item)"], note: "73.5% Emerald (3-Way)", type: "eme" },
+      "Lava Lamp": { items: ["Lava Block", "Glass Block"] },
+      "Magic Cauldron": { items: ["Fireplace", "Mystical Portal"] },
+      "Mud Block": { items: ["Water Block", "Soil Background"] },
+      "Mushroom Bump": { items: ["Flora", "Grass"] },
+      "Mystic Statue": { items: ["Spikes", "Mystical Block"] },
+      "Mystic Wall Panel": { items: ["Dungeon Wall", "Mystical Block"] },
+      "Mystical Block": { items: ["Glass Block", "Chi Portal"], note: "Emerald Source (50.5%)", type: "eme" },
+      "Mystical Portal": { items: ["Toilet", "Chi Portal"], note: "8 hrs", type: "time" },
+      "Painting": { items: ["Window Panel", "Glass Wall Panel"] },
+      "Prize Box": { items: ["Giftbox", "Display Frame"], note: "8 hrs", type: "time" },
+      "Respawn Checkpoint": { items: ["Signboard", "Arrow Pointer"] },
+      "Rock Wall Fence": { items: ["Wooden Fence", "Dungeon Bricks"] },
+      "Signboard": { items: ["Arrow Pointer", "Wooden Platform"] },
+      "Spike Fence": { items: ["Wooden Fence", "Spikes"] },
+      "Spikes": { items: ["Cactus", "Glass Block"] },
+      "Stairs": { items: ["Basalt", "Wooden Ladder"] },
+      "Steel Gateway": { items: ["Glass Entrance", "Dungeon Entrance"] },
+      "Steel Platform": { items: ["Steel Gateway", "Dungeon Platform"], note: "8 hrs", type: "time" },
+      "Steel Safe": { items: ["Steel Gateway", "Wooden Chest"], note: "8 hrs", type: "time" },
+      "Toilet": { items: ["Dungeon Platform", "Wooden Chair"] },
+      "Vines": { items: ["Bush", "Mushroom Bump"] },
+      "Volcanic Rock": { items: ["Lava Block", "Stone"] },
+      "Wall Clock": { items: ["Display Frame", "Hanging Lantern"] },
+      "Warning Sign": { items: ["Lava Block", "Wooden Sign"] },
+      "Window Panel": { items: ["Glass Wall Panel", "Soil Background"] },
+      "Wooden Block": { items: ["Grass", "Magma"] },
+      "Wooden Chair": { items: ["Wooden Platform", "Wooden Table"] },
+      "Wooden Chest": { items: ["Wooden Log", "Wooden Crate"] },
+      "Wooden Crate": { items: ["Wooden Sign", "Grass"] },
+      "Wooden Dock": { items: ["Water Block", "Wooden Fence"] },
+      "Wooden Entrance": { items: ["Stone", "Soil Background"] },
+      "Wooden Fence": { items: ["Wooden Ladder", "Wooden Wall Panel"] },
+      "Wooden Ladder": { items: ["Gravel", "Wooden Platform"] },
+      "Wooden Log": { items: ["Wooden Block", "Wooden Wall Panel"] },
+      "Wooden Platform": { items: ["Wooden Block", "Grass"] },
+      "Wooden Sign": { items: ["Grass", "Stone"] },
+      "Wooden Table": { items: ["Wooden Block", "Wooden Platform"] },
+      "Wooden Wall Panel": { items: ["Wooden Block", "Soil Background"] }
+    };
+
+    // =========================================================================
+    // LOGIKA KALKULATOR & TAMPILAN
+    // =========================================================================
+    let selectedItem = "Wooden Chest";
+
+    function getBaseMaterials(item, qty = 1, acc = {}) {
+      const recipe = RECIPES[item];
+      if (!recipe) {
+        acc[item] = (acc[item] || 0) + qty;
+        return acc;
+      }
+      for (const ing of recipe.items) {
+        getBaseMaterials(ing, qty, acc);
+      }
+      return acc;
+    }
+
+    function buildTreeHTML(item, qty = 1) {
+      const recipe = RECIPES[item];
+      if (!recipe) {
+        return `<li><strong>${qty}x</strong> ${item} <span style="color:#94a3b8">(Bahan Dasar)</span></li>`;
+      }
+      const children = recipe.items.map(ing => buildTreeHTML(ing, qty)).join("");
+      return `<li><strong>${qty}x ${item}</strong><ul>${children}</ul></li>`;
+    }
+
+    function renderCalculator() {
+      const qty = Math.max(1, parseInt(document.getElementById("qtyInput").value) || 1);
+      document.getElementById("selectedTitle").textContent = `${qty}x ${selectedItem}`;
+
+      const bases = getBaseMaterials(selectedItem, qty);
+      const baseList = document.getElementById("baseSummary");
+      baseList.innerHTML = Object.entries(bases)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => `<li><span>${name}</span><span class="count">${count}x</span></li>`)
+        .join("");
+
+      document.getElementById("treeView").innerHTML = `<ul>${buildTreeHTML(selectedItem, qty)}</ul>`;
+    }
+
+    function renderGrid(filter = "") {
+      const grid = document.getElementById("recipeGrid");
+      const q = filter.toLowerCase().trim();
+      const entries = Object.entries(RECIPES)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .filter(([name, data]) =>
+          name.toLowerCase().includes(q) ||
+          data.items.some(i => i.toLowerCase().includes(q))
+        );
+
+      grid.innerHTML = entries.map(([name, data]) => {
+        const badge = data.note
+          ? `<span class="badge ${data.type === 'eme' ? 'badge-eme' : 'badge-time'}">${data.note}</span>`
+          : "";
+        return `
+          <div class="card ${name === selectedItem ? 'active' : ''}" onclick="selectItem('${name.replace(/'/g, "\\'")}')">
+            <div class="item-name"><span>${name}</span>${badge}</div>
+            <div class="ingredients">${data.items.join(" + ")}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function selectItem(name) {
+      selectedItem = name;
+      renderCalculator();
+      renderGrid(document.getElementById("searchInput").value);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.getElementById("searchInput").addEventListener("input", (e) => renderGrid(e.target.value));
+    document.getElementById("qtyInput").addEventListener("input", renderCalculator);
+
+    renderCalculator();
+    renderGrid();
+  </script>
+</body>
+</html>
