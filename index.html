@@ -72,6 +72,11 @@
     .base-list li:last-child { border-bottom: none; }
     .count { font-weight: 700; color: var(--emerald); }
 
+    .note-box {
+      margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+      font-size: 0.78rem; color: var(--muted); line-height: 1.45;
+    }
+
     .tree ul { list-style: none; padding-left: 18px; margin: 4px 0; border-left: 1px dashed var(--border); }
     .tree > ul { padding-left: 0; border-left: none; }
     .tree li { margin: 4px 0; font-size: 0.9rem; }
@@ -104,7 +109,7 @@
   <div class="container">
     <header>
       <h1>Playtopia Core</h1>
-      <p>Click any item below to view its splice tree &amp; total base seeds needed</p>
+      <p>Official splice recipes, crafting tree &amp; base material calculator</p>
     </header>
 
     <div class="calculator" id="calculator">
@@ -118,14 +123,10 @@
       <div class="grid-2">
         <div class="panel">
           <h3>Total Base Materials</h3>
-          <div class="panel">
-  <h3>Total Base Materials</h3>
-  <ul class="base-list" id="baseSummary"></ul>
-  <p style="margin: 10px 0 0; font-size: 0.78rem; color: #94a3b8; line-height: 1.4;">
-    Note: Calculations show net requirements assuming a 1:1 yield with no failed attempts. Massing 1 tree at a time can fail or lose progress—keep extra buffer materials if needed.
-  </p>
-</div>
           <ul class="base-list" id="baseSummary"></ul>
+          <div class="note-box">
+            <strong>Note:</strong> Net calculation assumes a 1:1 yield with zero failed attempts. Massing 1 tree at a time can fail or lose progress—prepare extra buffer materials if needed.
+          </div>
         </div>
         <div class="panel">
           <h3>Splice Tree</h3>
@@ -135,7 +136,7 @@
     </div>
 
     <div class="controls">
-      <input type="text" id="searchInput" placeholder="Search item or ingredient (e.g., Wooden Chest, Mystic, Glass)..." />
+      <input type="text" id="searchInput" placeholder="Search item or ingredient (e.g., Wooden Chest, Mystic, Jade)..." />
     </div>
 
     <div class="recipe-grid" id="recipeGrid"></div>
@@ -147,81 +148,100 @@
 
   <script>
     const RECIPES = {
-      "Aquarium Block": { items: ["Water Block", "Glass Block"] },
-      "Aquarium Panel": { items: ["Water Block", "Glass Wall Panel"] },
-      "Arrow Path Finder": { items: ["Arrow Pointer", "Checkpoint"], note: "8 hrs", type: "time" },
-      "Arrow Pointer": { items: ["Bush", "Wooden Sign"] },
-      "Banana Boomerang": { items: ["Glass Door", "Wooden Chest"], note: "Emerald Source", type: "eme" },
-      "Basalt": { items: ["Gravel Rock", "Stone"], note: "Emerald Source (13%)", type: "eme" },
-      "Bed": { items: ["Wooden Fence", "Wooden Table"] },
-      "Bookshelf": { items: ["Wooden Chest", "Couch"] },
-      "Bridge": { items: ["Stairs", "Arrow Path Finder"] },
+      // Path 1
+      "Flora": { items: ["Grass Block", "Soil Background"] },
+      "Glass Wall Panel": { items: ["Stone Block", "Magma Block"] },
+      "Gravel": { items: ["Magma Block", "Soil Background"] },
+      "Wooden Block": { items: ["Grass Block", "Magma Block"] },
+      "Wooden Entrance": { items: ["Stone Block", "Soil Background"] },
+      "Wooden Sign": { items: ["Grass Block", "Stone Block"] },
+      "Mud Block": { items: ["Water", "Soil Background"] },
+      "Obsidian Block": { items: ["Water", "Lava"] },
+      "Volcanic Rock": { items: ["Lava", "Stone Block"] },
+
+      // Path 2
+      "Basalt": { items: ["Gravel Rock", "Stone Block"], note: "Emerald Source", type: "eme" },
       "Bush": { items: ["Flora", "Soil Background"] },
+      "Flare": { items: ["Wooden Sign", "Magma Block"] },
+      "Mushroom Bump": { items: ["Flora", "Grass Block"] },
+      "Window Panel": { items: ["Glass Wall Panel", "Soil Background"] },
+      "Wooden Crate": { items: ["Wooden Sign", "Grass Block"] },
+      "Wooden Platform": { items: ["Wooden Block", "Grass Block"] },
+      "Wooden Wall Panel": { items: ["Wooden Block", "Soil Background"] },
+
+      // Path 3
+      "Arrow Pointer": { items: ["Bush", "Wooden Sign"] },
       "Cactus": { items: ["Flora", "Mushroom Bump"] },
-      "Camping Tent": { items: ["Fireplace", "Couch"] },
-      "Chandelier": { items: ["Glass Block", "Fireplace"], note: "Emerald Source (6 hrs)", type: "eme" },
-      "Chi Portal": { items: ["Dungeon Door", "Glass Door"] },
-      "Couch": { items: ["Wooden Chair", "Bed"], note: "8 hrs", type: "time" },
-      "Display Frame": { items: ["Wooden Crate", "Painting"] },
       "Dungeon Bricks": { items: ["Basalt", "Gravel"] },
       "Dungeon Door": { items: ["Window Panel", "Wooden Entrance"] },
       "Dungeon Entrance": { items: ["Flare", "Wooden Entrance"] },
       "Dungeon Platform": { items: ["Wooden Platform", "Glass Wall Panel"] },
-      "Dungeon Wall": { items: ["Dungeon Bricks", "Wooden Wall Panel"] },
-      "Fireplace": { items: ["Flare", "Wooden Log"] },
-      "Flare": { items: ["Wooden Sign", "Magma"] },
-      "Flora": { items: ["Grass", "Soil Background"] },
       "Glass Block": { items: ["Basalt", "Glass Wall Panel"] },
-      "Glass Door": { items: ["Window Panel", "Dungeon Door"] },
-      "Glass Entrance": { items: ["Glass Block", "Dungeon Entrance"] },
-      "Glass Wall Panel": { items: ["Stone", "Magma"] },
-      "Gravel": { items: ["Magma", "Soil Background"] },
-      "Hanging Lantern": { items: ["Fireplace", "Chandelier"] },
-      "Jade Block": { items: ["Lily Pad", "Arrow Path Finder", "??? (3rd Item)"], note: "73.5% Emerald (3-Way)", type: "eme" },
-      "Lava Lamp": { items: ["Lava Block", "Glass Block"] },
-      "Magic Cauldron": { items: ["Fireplace", "Mystical Portal"] },
-      "Mud Block": { items: ["Water Block", "Soil Background"] },
-      "Mushroom Bump": { items: ["Flora", "Grass"] },
-      "Mystic Statue": { items: ["Spikes", "Mystical Block"] },
-      "Mystic Wall Panel": { items: ["Dungeon Wall", "Mystical Block"] },
-      "Mystical Block": { items: ["Glass Block", "Chi Portal"], note: "Emerald Source (50.5%)", type: "eme" },
-      "Mystical Portal": { items: ["Toilet", "Chi Portal"], note: "8 hrs", type: "time" },
       "Painting": { items: ["Window Panel", "Glass Wall Panel"] },
-      "Prize Box": { items: ["Giftbox", "Display Frame"], note: "8 hrs", type: "time" },
-      "Respawn Checkpoint": { items: ["Signboard", "Arrow Pointer"] },
-      "Rock Wall Fence": { items: ["Wooden Fence", "Dungeon Bricks"] },
-      "Signboard": { items: ["Arrow Pointer", "Wooden Platform"] },
-      "Spike Fence": { items: ["Wooden Fence", "Spikes"] },
-      "Spikes": { items: ["Cactus", "Glass Block"] },
-      "Stairs": { items: ["Basalt", "Wooden Ladder"] },
-      "Steel Gateway": { items: ["Glass Entrance", "Dungeon Entrance"] },
-      "Steel Platform": { items: ["Steel Gateway", "Dungeon Platform"], note: "8 hrs", type: "time" },
-      "Steel Safe": { items: ["Steel Gateway", "Wooden Chest"], note: "8 hrs", type: "time" },
-      "Toilet": { items: ["Dungeon Platform", "Wooden Chair"] },
       "Vines": { items: ["Bush", "Mushroom Bump"] },
-      "Volcanic Rock": { items: ["Lava Block", "Stone"] },
-      "Wall Clock": { items: ["Display Frame", "Hanging Lantern"] },
-      "Warning Sign": { items: ["Lava Block", "Wooden Sign"] },
-      "Window Panel": { items: ["Glass Wall Panel", "Soil Background"] },
-      "Wooden Block": { items: ["Grass", "Magma"] },
-      "Wooden Chair": { items: ["Wooden Platform", "Wooden Table"] },
-      "Wooden Chest": { items: ["Wooden Log", "Wooden Crate"] },
-      "Wooden Crate": { items: ["Wooden Sign", "Grass"] },
-      "Wooden Dock": { items: ["Water Block", "Wooden Fence"] },
-      "Wooden Entrance": { items: ["Stone", "Soil Background"] },
-      "Wooden Fence": { items: ["Wooden Ladder", "Wooden Wall Panel"] },
       "Wooden Ladder": { items: ["Gravel", "Wooden Platform"] },
       "Wooden Log": { items: ["Wooden Block", "Wooden Wall Panel"] },
-      "Wooden Platform": { items: ["Wooden Block", "Grass"] },
-      "Wooden Sign": { items: ["Grass", "Stone"] },
       "Wooden Table": { items: ["Wooden Block", "Wooden Platform"] },
-      "Wooden Wall Panel": { items: ["Wooden Block", "Soil Background"] }
+
+      // Path 4
+      "Display Frame": { items: ["Wooden Crate", "Painting"] },
+      "Dungeon Wall": { items: ["Dungeon Bricks", "Wooden Wall Panel"] },
+      "Fireplace": { items: ["Flare", "Wooden Log"] },
+      "Glass Door": { items: ["Window Panel", "Dungeon Door"] },
+      "Glass Entrance": { items: ["Glass Block", "Dungeon Entrance"] },
+      "Signboard": { items: ["Arrow Pointer", "Wooden Platform"] },
+      "Spikes": { items: ["Cactus", "Glass Block"] },
+      "Stairs": { items: ["Basalt", "Wooden Ladder"] },
+      "Wooden Chair": { items: ["Wooden Platform", "Wooden Table"] },
+      "Wooden Chest": { items: ["Wooden Log", "Wooden Crate"] },
+      "Wooden Fence": { items: ["Wooden Ladder", "Wooden Wall Panel"] },
+
+      // Path 5
+      "Banana Boomerang": { items: ["Glass Door", "Wooden Chest"], note: "Emerald Source", type: "eme" },
+      "Bed": { items: ["Wooden Fence", "Wooden Table"] },
+      "Chandelier": { items: ["Glass Block", "Fireplace"] },
+      "Chi Portal": { items: ["Dungeon Door", "Glass Door"] },
+      "Giftbox": { items: ["Wooden Chest", "Vines"] },
+      "Respawn Checkpoint": { items: ["Signboard", "Arrow Pointer"] },
+      "Rock Wall Fence": { items: ["Wooden Fence", "Dungeon Bricks"] },
+      "Steel Gateway": { items: ["Glass Entrance", "Dungeon Entrance"] },
+      "Mannequin": { items: ["Display Frame", "Glass Door"] },
+      "Toilet": { items: ["Dungeon Platform", "Wooden Chair"] },
+
+      // Path 6
+      "Mystical Block": { items: ["Glass Block", "Chi Portal"], note: "Emerald Source", type: "eme" },
+      "Arrow Path Finder": { items: ["Arrow Pointer", "Checkpoint"], note: "8 hrs", type: "time" },
+      "Prize Box": { items: ["Giftbox", "Display Frame"], note: "8 hrs", type: "time" },
+      "Steel Safe": { items: ["Steel Gateway", "Wooden Chest"], note: "8 hrs", type: "time" },
+      "Couch": { items: ["Wooden Chair", "Bed"], note: "8 hrs", type: "time" },
+      "Steel Platform": { items: ["Steel Gateway", "Dungeon Platform"], note: "8 hrs", type: "time" },
+      "Mystical Portal": { items: ["Toilet", "Chi Portal"], note: "8 hrs", type: "time" },
+      "Hanging Lantern": { items: ["Fireplace", "Chandelier"] },
+      "Spike Fence": { items: ["Wooden Fence", "Spikes"] },
+
+      // Path 7
+      "Mystic Wall Panel": { items: ["Dungeon Wall", "Mystical Block"] },
+      "Mystic Statue": { items: ["Spikes", "Mystical Block"] },
+      "Steel Block": { items: ["Steel Platform", "Steel Gateway"] },
+      "Bookshelf": { items: ["Wooden Chest", "Couch"] },
+      "Camping Tent": { items: ["Fireplace", "Couch"] },
+      "Magic Cauldron": { items: ["Fireplace", "Mystical Portal"] },
+      "Bridge": { items: ["Stairs", "Arrow Path Finder"] },
+      "Neon Light": { items: ["Bulletin Sign Board", "Hanging Lantern"] },
+      "Wall Clock": { items: ["Display Frame", "Hanging Lantern"] },
+
+      // 3-Way Splice
+      "Jade Block": { items: ["Lily Pad", "Arrow Path Finder", "??? (Unknown)"], note: "73.5% Emerald (3-Way)", type: "eme" }
     };
 
     let selectedItem = "Wooden Chest";
 
     function escapeAttr(str) {
-      return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/</g, "&lt;");
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;");
     }
 
     function getBaseMaterials(item, qty = 1, acc = {}) {
@@ -239,7 +259,7 @@
     function buildTreeHTML(item, qty = 1) {
       const recipe = RECIPES[item];
       if (!recipe) {
-        return `<li><strong>${qty}x</strong> ${escapeAttr(item)} <span style="color:#94a3b8">(Base Seed)</span></li>`;
+        return `<li><strong>${qty}x</strong> ${escapeAttr(item)} <span style="color:#94a3b8">(Base / Unmapped)</span></li>`;
       }
       const children = recipe.items.map(ing => buildTreeHTML(ing, qty)).join("");
       return `<li><strong>${qty}x ${escapeAttr(item)}</strong><ul>${children}</ul></li>`;
