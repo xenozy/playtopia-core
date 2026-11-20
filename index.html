@@ -32,12 +32,13 @@
     .controls {
       display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
     }
-    input[type="text"], input[type="number"] {
+    input[type="text"], input[type="number"], select {
       background: var(--card); border: 1px solid var(--border); color: var(--text);
       padding: 10px 14px; border-radius: 8px; font-size: 0.95rem; outline: none;
     }
     input[type="text"] { flex: 1; min-width: 220px; }
-    input[type="text"]:focus, input[type="number"]:focus { border-color: var(--accent); }
+    select { cursor: pointer; }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: var(--accent); }
 
     .calculator {
       background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -47,7 +48,7 @@
       display: flex; justify-content: space-between; align-items: center;
       flex-wrap: wrap; gap: 10px; margin-bottom: 12px;
     }
-    .calc-title { font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+    .calc-title { font-weight: 700; font-size: 1.1rem; color: var(--accent); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .qty-box { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
     .qty-box input { width: 80px; text-align: center; }
 
@@ -91,12 +92,14 @@
     }
     .card:hover { background: var(--card-hover); border-color: var(--accent); }
     .card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .item-name { font-weight: 700; font-size: 1rem; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 6px; }
+    .item-name { font-weight: 700; font-size: 1rem; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+    .badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
     .ingredients { font-size: 0.85rem; color: var(--muted); }
     .badge {
-      font-size: 0.72rem; padding: 2px 6px; border-radius: 6px; font-weight: 600;
+      font-size: 0.7rem; padding: 2px 6px; border-radius: 6px; font-weight: 600;
       white-space: nowrap; height: fit-content;
     }
+    .badge-path { background: rgba(56, 189, 248, 0.16); color: var(--accent); }
     .badge-eme { background: rgba(16, 185, 129, 0.18); color: var(--emerald); }
     .badge-time { background: rgba(245, 158, 11, 0.18); color: var(--warn); }
     footer {
@@ -137,6 +140,17 @@
 
     <div class="controls">
       <input type="text" id="searchInput" placeholder="Search item or ingredient (e.g., Wooden Chest, Mystic, Jade)..." />
+      <select id="pathFilter" aria-label="Filter by Path">
+        <option value="ALL">All Paths</option>
+        <option value="Path 1">Path 1</option>
+        <option value="Path 2">Path 2</option>
+        <option value="Path 3">Path 3</option>
+        <option value="Path 4">Path 4</option>
+        <option value="Path 5">Path 5</option>
+        <option value="Path 6">Path 6</option>
+        <option value="Path 7">Path 7</option>
+        <option value="3-Way">3-Way Splice</option>
+      </select>
     </div>
 
     <div class="recipe-grid" id="recipeGrid"></div>
@@ -148,175 +162,55 @@
 
   <script>
     const RECIPES = {
-     // Path 1
-      "Flora": { items: ["Grass Block", "Soil Background"] },
-      "Glass Wall Panel": { items: ["Stone Block", "Magma Block"] },
-      "Gravel": { items: ["Magma Block", "Soil Background"] },
-      "Wooden Block": { items: ["Grass Block", "Magma Block"] },
-      "Wooden Entrance": { items: ["Stone Block", "Soil Background"] },
-      "Wooden Sign": { items: ["Grass Block", "Stone Block"] },
-      "Mud Block": { items: ["Water", "Soil Background"] },
-      "Obsidian Block": { items: ["Water", "Lava"] },
-      "Volcanic Rock": { items: ["Lava", "Stone Block"] },
+      // Path 1
+      "Flora": { path: "Path 1", items: ["Grass Block", "Soil Background"] },
+      "Glass Wall Panel": { path: "Path 1", items: ["Stone Block", "Magma Block"] },
+      "Gravel": { path: "Path 1", items: ["Magma Block", "Soil Background"] },
+      "Wooden Block": { path: "Path 1", items: ["Grass Block", "Magma Block"] },
+      "Wooden Entrance": { path: "Path 1", items: ["Stone Block", "Soil Background"] },
+      "Wooden Sign": { path: "Path 1", items: ["Grass Block", "Stone Block"] },
+      "Mud Block": { path: "Path 1", items: ["Water", "Soil Background"] },
+      "Obsidian Block": { path: "Path 1", items: ["Water", "Lava"] },
+      "Volcanic Rock": { path: "Path 1", items: ["Lava", "Stone Block"] },
 
       // Path 2
-      "Basalt": { items: ["Gravel", "Stone Block"], note: "Emerald Source", type: "eme" },
-      "Bush": { items: ["Flora", "Soil Background"] },
-      "Flare": { items: ["Wooden Sign", "Magma Block"] },
-      "Mushroom Bump": { items: ["Flora", "Grass Block"] },
-      "Window Panel": { items: ["Glass Wall Panel", "Soil Background"] },
-      "Wooden Crate": { items: ["Wooden Sign", "Grass Block"] },
-      "Wooden Platform": { items: ["Wooden Block", "Grass Block"] },
-      "Wooden Wall Panel": { items: ["Wooden Block", "Soil Background"] },
+      "Basalt": { path: "Path 2", items: ["Gravel", "Stone Block"], note: "Emerald Source", type: "eme" },
+      "Bush": { path: "Path 2", items: ["Flora", "Soil Background"] },
+      "Flare": { path: "Path 2", items: ["Wooden Sign", "Magma Block"] },
+      "Mushroom Bump": { path: "Path 2", items: ["Flora", "Grass Block"] },
+      "Window Panel": { path: "Path 2", items: ["Glass Wall Panel", "Soil Background"] },
+      "Wooden Crate": { path: "Path 2", items: ["Wooden Sign", "Grass Block"] },
+      "Wooden Platform": { path: "Path 2", items: ["Wooden Block", "Grass Block"] },
+      "Wooden Wall Panel": { path: "Path 2", items: ["Wooden Block", "Soil Background"] },
 
       // Path 3
-      "Arrow Pointer": { items: ["Bush", "Wooden Sign"] },
-      "Cactus": { items: ["Flora", "Mushroom Bump"] },
-      "Dungeon Bricks": { items: ["Basalt", "Gravel"] },
-      "Dungeon Door": { items: ["Window Panel", "Wooden Entrance"] },
-      "Dungeon Entrance": { items: ["Flare", "Wooden Entrance"] },
-      "Dungeon Platform": { items: ["Wooden Platform", "Glass Wall Panel"] },
-      "Glass Block": { items: ["Basalt", "Glass Wall Panel"] },
-      "Painting": { items: ["Window Panel", "Glass Wall Panel"] },
-      "Vines": { items: ["Bush", "Mushroom Bump"] },
-      "Wooden Ladder": { items: ["Gravel", "Wooden Platform"] },
-      "Wooden Log": { items: ["Wooden Block", "Wooden Wall Panel"] },
-      "Wooden Table": { items: ["Wooden Block", "Wooden Platform"] },
+      "Arrow Pointer": { path: "Path 3", items: ["Bush", "Wooden Sign"] },
+      "Cactus": { path: "Path 3", items: ["Flora", "Mushroom Bump"] },
+      "Dungeon Bricks": { path: "Path 3", items: ["Basalt", "Gravel"] },
+      "Dungeon Door": { path: "Path 3", items: ["Window Panel", "Wooden Entrance"] },
+      "Dungeon Entrance": { path: "Path 3", items: ["Flare", "Wooden Entrance"] },
+      "Dungeon Platform": { path: "Path 3", items: ["Wooden Platform", "Glass Wall Panel"] },
+      "Glass Block": { path: "Path 3", items: ["Basalt", "Glass Wall Panel"] },
+      "Painting": { path: "Path 3", items: ["Window Panel", "Glass Wall Panel"] },
+      "Vines": { path: "Path 3", items: ["Bush", "Mushroom Bump"] },
+      "Wooden Ladder": { path: "Path 3", items: ["Gravel", "Wooden Platform"] },
+      "Wooden Log": { path: "Path 3", items: ["Wooden Block", "Wooden Wall Panel"] },
+      "Wooden Table": { path: "Path 3", items: ["Wooden Block", "Wooden Platform"] },
 
       // Path 4
-      "Display Frame": { items: ["Wooden Crate", "Painting"] },
-      "Dungeon Wall": { items: ["Dungeon Bricks", "Wooden Wall Panel"] },
-      "Fireplace": { items: ["Flare", "Wooden Log"] },
-      "Glass Door": { items: ["Window Panel", "Dungeon Door"] },
-      "Glass Entrance": { items: ["Glass Block", "Dungeon Entrance"] },
-      "Signboard": { items: ["Arrow Pointer", "Wooden Platform"] },
-      "Spikes": { items: ["Cactus", "Glass Block"] },
-      "Stairs": { items: ["Basalt", "Wooden Ladder"] },
-      "Wooden Chair": { items: ["Wooden Platform", "Wooden Table"] },
-      "Wooden Chest": { items: ["Wooden Log", "Wooden Crate"] },
-      "Wooden Fence": { items: ["Wooden Ladder", "Wooden Wall Panel"] },
+      "Display Frame": { path: "Path 4", items: ["Wooden Crate", "Painting"] },
+      "Dungeon Wall": { path: "Path 4", items: ["Dungeon Bricks", "Wooden Wall Panel"] },
+      "Fireplace": { path: "Path 4", items: ["Flare", "Wooden Log"] },
+      "Glass Door": { path: "Path 4", items: ["Window Panel", "Dungeon Door"] },
+      "Glass Entrance": { path: "Path 4", items: ["Glass Block", "Dungeon Entrance"] },
+      "Signboard": { path: "Path 4", items: ["Arrow Pointer", "Wooden Platform"] },
+      "Spikes": { path: "Path 4", items: ["Cactus", "Glass Block"] },
+      "Stairs": { path: "Path 4", items: ["Basalt", "Wooden Ladder"] },
+      "Wooden Chair": { path: "Path 4", items: ["Wooden Platform", "Wooden Table"] },
+      "Wooden Chest": { path: "Path 4", items: ["Wooden Log", "Wooden Crate"] },
+      "Wooden Fence": { path: "Path 4", items: ["Wooden Ladder", "Wooden Wall Panel"] },
 
       // Path 5
-      "Banana Boomerang": { items: ["Glass Door", "Wooden Chest"], note: "Emerald Source", type: "eme" },
-      "Bed": { items: ["Wooden Fence", "Wooden Table"] },
-      "Chandelier": { items: ["Glass Block", "Fireplace"] },
-      "Chi Portal": { items: ["Dungeon Door", "Glass Door"] },
-      "Giftbox": { items: ["Wooden Chest", "Vines"] },
-      "Respawn Checkpoint": { items: ["Signboard", "Arrow Pointer"] },
-      "Rock Wall Fence": { items: ["Wooden Fence", "Dungeon Bricks"] },
-      "Steel Gateway": { items: ["Glass Entrance", "Dungeon Entrance"] },
-      "Mannequin": { items: ["Display Frame", "Glass Door"] },
-      "Toilet": { items: ["Dungeon Platform", "Wooden Chair"] },
-
-      // Path 6
-      "Mystical Block": { items: ["Glass Block", "Chi Portal"], note: "Emerald Source", type: "eme" },
-      "Arrow Path Finder": { items: ["Arrow Pointer", "Checkpoint"], note: "8 hrs", type: "time" },
-      "Prize Box": { items: ["Giftbox", "Display Frame"], note: "8 hrs", type: "time" },
-      "Steel Safe": { items: ["Steel Gateway", "Wooden Chest"], note: "8 hrs", type: "time" },
-      "Couch": { items: ["Wooden Chair", "Bed"], note: "8 hrs", type: "time" },
-      "Steel Platform": { items: ["Steel Gateway", "Dungeon Platform"], note: "8 hrs", type: "time" },
-      "Mystical Portal": { items: ["Toilet", "Chi Portal"], note: "8 hrs", type: "time" },
-      "Hanging Lantern": { items: ["Fireplace", "Chandelier"] },
-      "Spike Fence": { items: ["Wooden Fence", "Spikes"] },
-
-      // Path 7
-      "Mystic Wall Panel": { items: ["Dungeon Wall", "Mystical Block"] },
-      "Mystic Statue": { items: ["Spikes", "Mystical Block"] },
-      "Steel Block": { items: ["Steel Platform", "Steel Gateway"] },
-      "Bookshelf": { items: ["Wooden Chest", "Couch"] },
-      "Camping Tent": { items: ["Fireplace", "Couch"] },
-      "Magic Cauldron": { items: ["Fireplace", "Mystical Portal"] },
-      "Bridge": { items: ["Stairs", "Arrow Path Finder"] },
-      "Neon Light": { items: ["Bulletin Sign Board", "Hanging Lantern"] },
-      "Wall Clock": { items: ["Display Frame", "Hanging Lantern"] },
-
-      // 3-Way Splice
-      "Jade Block": { items: ["Lily Pad", "Arrow Path Finder", "??? (Unknown)"], note: "73.5% Emerald (3-Way)", type: "eme" }
-    };
-
-    let selectedItem = "Wooden Chest";
-
-    function escapeAttr(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;")
-        .replace(/</g, "&lt;");
-    }
-
-    function getBaseMaterials(item, qty = 1, acc = {}) {
-      const recipe = RECIPES[item];
-      if (!recipe) {
-        acc[item] = (acc[item] || 0) + qty;
-        return acc;
-      }
-      for (const ing of recipe.items) {
-        getBaseMaterials(ing, qty, acc);
-      }
-      return acc;
-    }
-
-    function buildTreeHTML(item, qty = 1) {
-      const recipe = RECIPES[item];
-      if (!recipe) {
-        return `<li><strong>${qty}x</strong> ${escapeAttr(item)} <span style="color:#94a3b8">(Base / Unmapped)</span></li>`;
-      }
-      const children = recipe.items.map(ing => buildTreeHTML(ing, qty)).join("");
-      return `<li><strong>${qty}x ${escapeAttr(item)}</strong><ul>${children}</ul></li>`;
-    }
-
-    function renderCalculator() {
-      const qtyInput = document.getElementById("qtyInput");
-      const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
-      document.getElementById("selectedTitle").textContent = `${qty}x ${selectedItem}`;
-
-      const bases = getBaseMaterials(selectedItem, qty);
-      const baseList = document.getElementById("baseSummary");
-      baseList.innerHTML = Object.entries(bases)
-        .sort((a, b) => b[1] - a[1])
-        .map(([name, count]) => `<li><span>${escapeAttr(name)}</span><span class="count">${count}x</span></li>`)
-        .join("");
-
-      document.getElementById("treeView").innerHTML = `<ul>${buildTreeHTML(selectedItem, qty)}</ul>`;
-    }
-
-    function renderGrid(filter = "") {
-      const grid = document.getElementById("recipeGrid");
-      const q = filter.toLowerCase().trim();
-      const entries = Object.entries(RECIPES)
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .filter(([name, data]) =>
-          name.toLowerCase().includes(q) ||
-          data.items.some(i => i.toLowerCase().includes(q))
-        );
-
-      grid.innerHTML = entries.map(([name, data]) => {
-        const badge = data.note
-          ? `<span class="badge ${data.type === 'eme' ? 'badge-eme' : 'badge-time'}">${escapeAttr(data.note)}</span>`
-          : "";
-        return `
-          <div class="card ${name === selectedItem ? 'active' : ''}" data-item="${escapeAttr(name)}">
-            <div class="item-name"><span>${escapeAttr(name)}</span>${badge}</div>
-            <div class="ingredients">${escapeAttr(data.items.join(" + "))}</div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    document.getElementById("recipeGrid").addEventListener("click", (e) => {
-      const card = e.target.closest(".card");
-      if (!card) return;
-      selectedItem = card.getAttribute("data-item");
-      renderCalculator();
-      renderGrid(document.getElementById("searchInput").value);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-
-    document.getElementById("searchInput").addEventListener("input", (e) => renderGrid(e.target.value));
-    document.getElementById("qtyInput").addEventListener("input", renderCalculator);
-
-    renderCalculator();
-    renderGrid();
-  </script>
-</body>
-</html>
+      "Banana Boomerang": { path: "Path 5", items: ["Glass Door", "Wooden Chest"], note: "Emerald Source", type: "eme" },
+      "Bed": { path: "Path 5", items: ["Wooden Fence", "Wooden Table"] },
+      "Chandelier": { path: "Path 5", items: ["Glass
