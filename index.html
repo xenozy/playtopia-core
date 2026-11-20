@@ -23,11 +23,17 @@
     }
     .container { max-width: 900px; margin: 0 auto; }
     header {
-      text-align: center; padding: 16px 0 24px; border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
+      text-align: center; padding: 16px 0 20px; border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
     }
     header h1 { margin: 0 0 6px; font-size: 1.5rem; color: var(--accent); }
     header p { margin: 0; font-size: 0.9rem; color: var(--muted); }
+
+    .path-strip {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 18px; font-size: 0.82rem; color: var(--muted);
+    }
+    .path-strip strong { color: var(--text); }
 
     .controls {
       display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
@@ -115,6 +121,10 @@
       <p>Official splice recipes, crafting tree &amp; base material calculator</p>
     </header>
 
+    <div class="path-strip">
+      <strong>Path Timers:</strong> Path 1: 2m &bull; Path 2: 5m &bull; Path 3: 10m &bull; Path 4: 1hr &bull; Path 5: ?hrs &bull; Path 6: 12hrs (some show 8 hrs in "recipe" world) &bull; Path 7: ?hrs
+    </div>
+
     <div class="calculator" id="calculator">
       <div class="calc-header">
         <div class="calc-title" id="selectedTitle">Select an item below to calculate</div>
@@ -139,16 +149,17 @@
     </div>
 
     <div class="controls">
-      <input type="text" id="searchInput" placeholder="Search item or ingredient (e.g., Wooden Chest, Mystic, Jade)..." />
+      <input type="text" id="searchInput" placeholder="Search item or ingredient (e.g., Wooden Chest, Lily Pad, Jade)..." />
       <select id="pathFilter" aria-label="Filter by Path">
         <option value="ALL">All Paths</option>
-        <option value="Path 1">Path 1</option>
-        <option value="Path 2">Path 2</option>
-        <option value="Path 3">Path 3</option>
-        <option value="Path 4">Path 4</option>
-        <option value="Path 5">Path 5</option>
-        <option value="Path 6">Path 6</option>
-        <option value="Path 7">Path 7</option>
+        <option value="Path 1">Path 1 (2m)</option>
+        <option value="Path 2">Path 2 (5m)</option>
+        <option value="Path 3">Path 3 (10m)</option>
+        <option value="Path 4">Path 4 (1hr)</option>
+        <option value="Path 5">Path 5 (?hrs)</option>
+        <option value="Path 6">Path 6 (12hrs / 8h)</option>
+        <option value="Path 7">Path 7 (?hrs)</option>
+        <option value="Unknown Path">Unknown Path</option>
         <option value="3-Way">3-Way Splice</option>
       </select>
     </div>
@@ -162,7 +173,10 @@
 
   <script>
     const RECIPES = {
-      // Path 1
+      // Unknown Path
+      "Lily Pad": { path: "Unknown Path", items: ["Water", "Vines"] },
+
+      // Path 1 (2m)
       "Flora": { path: "Path 1", items: ["Grass Block", "Soil Background"] },
       "Glass Wall Panel": { path: "Path 1", items: ["Stone Block", "Magma Block"] },
       "Gravel": { path: "Path 1", items: ["Magma Block", "Soil Background"] },
@@ -173,7 +187,7 @@
       "Obsidian Block": { path: "Path 1", items: ["Water", "Lava"] },
       "Volcanic Rock": { path: "Path 1", items: ["Lava", "Stone Block"] },
 
-      // Path 2
+      // Path 2 (5m)
       "Basalt": { path: "Path 2", items: ["Gravel", "Stone Block"], note: "Emerald Source", type: "eme" },
       "Bush": { path: "Path 2", items: ["Flora", "Soil Background"] },
       "Flare": { path: "Path 2", items: ["Wooden Sign", "Magma Block"] },
@@ -183,7 +197,7 @@
       "Wooden Platform": { path: "Path 2", items: ["Wooden Block", "Grass Block"] },
       "Wooden Wall Panel": { path: "Path 2", items: ["Wooden Block", "Soil Background"] },
 
-      // Path 3
+      // Path 3 (10m)
       "Arrow Pointer": { path: "Path 3", items: ["Bush", "Wooden Sign"] },
       "Cactus": { path: "Path 3", items: ["Flora", "Mushroom Bump"] },
       "Dungeon Bricks": { path: "Path 3", items: ["Basalt", "Gravel"] },
@@ -197,7 +211,7 @@
       "Wooden Log": { path: "Path 3", items: ["Wooden Block", "Wooden Wall Panel"] },
       "Wooden Table": { path: "Path 3", items: ["Wooden Block", "Wooden Platform"] },
 
-      // Path 4
+      // Path 4 (1hr)
       "Display Frame": { path: "Path 4", items: ["Wooden Crate", "Painting"] },
       "Dungeon Wall": { path: "Path 4", items: ["Dungeon Bricks", "Wooden Wall Panel"] },
       "Fireplace": { path: "Path 4", items: ["Flare", "Wooden Log"] },
@@ -210,7 +224,7 @@
       "Wooden Chest": { path: "Path 4", items: ["Wooden Log", "Wooden Crate"] },
       "Wooden Fence": { path: "Path 4", items: ["Wooden Ladder", "Wooden Wall Panel"] },
 
-      // Path 5
+      // Path 5 (?hrs)
       "Banana Boomerang": { path: "Path 5", items: ["Glass Door", "Wooden Chest"], note: "Emerald Source", type: "eme" },
       "Bed": { path: "Path 5", items: ["Wooden Fence", "Wooden Table"] },
       "Chandelier": { path: "Path 5", items: ["Glass Block", "Fireplace"] },
@@ -222,7 +236,7 @@
       "Mannequin": { path: "Path 5", items: ["Display Frame", "Glass Door"] },
       "Toilet": { path: "Path 5", items: ["Dungeon Platform", "Wooden Chair"] },
 
-      // Path 6
+      // Path 6 (12hrs / 8 hrs in "recipe" world)
       "Mystical Block": { path: "Path 6", items: ["Glass Block", "Chi Portal"], note: "Emerald Source", type: "eme" },
       "Arrow Path Finder": { path: "Path 6", items: ["Arrow Pointer", "Checkpoint"], note: "8 hrs", type: "time" },
       "Prize Box": { path: "Path 6", items: ["Giftbox", "Display Frame"], note: "8 hrs", type: "time" },
@@ -233,7 +247,7 @@
       "Hanging Lantern": { path: "Path 6", items: ["Fireplace", "Chandelier"] },
       "Spike Fence": { path: "Path 6", items: ["Wooden Fence", "Spikes"] },
 
-      // Path 7
+      // Path 7 (?hrs)
       "Mystic Wall Panel": { path: "Path 7", items: ["Dungeon Wall", "Mystical Block"] },
       "Mystic Statue": { path: "Path 7", items: ["Spikes", "Mystical Block"] },
       "Steel Block": { path: "Path 7", items: ["Steel Platform", "Steel Gateway"] },
