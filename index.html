@@ -213,4 +213,151 @@
       // Path 5
       "Banana Boomerang": { path: "Path 5", items: ["Glass Door", "Wooden Chest"], note: "Emerald Source", type: "eme" },
       "Bed": { path: "Path 5", items: ["Wooden Fence", "Wooden Table"] },
-      "Chandelier": { path: "Path 5", items: ["Glass
+      "Chandelier": { path: "Path 5", items: ["Glass Block", "Fireplace"] },
+      "Chi Portal": { path: "Path 5", items: ["Dungeon Door", "Glass Door"] },
+      "Giftbox": { path: "Path 5", items: ["Wooden Chest", "Vines"] },
+      "Respawn Checkpoint": { path: "Path 5", items: ["Signboard", "Arrow Pointer"] },
+      "Rock Wall Fence": { path: "Path 5", items: ["Wooden Fence", "Dungeon Bricks"] },
+      "Steel Gateway": { path: "Path 5", items: ["Glass Entrance", "Dungeon Entrance"] },
+      "Mannequin": { path: "Path 5", items: ["Display Frame", "Glass Door"] },
+      "Toilet": { path: "Path 5", items: ["Dungeon Platform", "Wooden Chair"] },
+
+      // Path 6
+      "Mystical Block": { path: "Path 6", items: ["Glass Block", "Chi Portal"], note: "Emerald Source", type: "eme" },
+      "Arrow Path Finder": { path: "Path 6", items: ["Arrow Pointer", "Checkpoint"], note: "8 hrs", type: "time" },
+      "Prize Box": { path: "Path 6", items: ["Giftbox", "Display Frame"], note: "8 hrs", type: "time" },
+      "Steel Safe": { path: "Path 6", items: ["Steel Gateway", "Wooden Chest"], note: "8 hrs", type: "time" },
+      "Couch": { path: "Path 6", items: ["Wooden Chair", "Bed"], note: "8 hrs", type: "time" },
+      "Steel Platform": { path: "Path 6", items: ["Steel Gateway", "Dungeon Platform"], note: "8 hrs", type: "time" },
+      "Mystical Portal": { path: "Path 6", items: ["Toilet", "Chi Portal"], note: "8 hrs", type: "time" },
+      "Hanging Lantern": { path: "Path 6", items: ["Fireplace", "Chandelier"] },
+      "Spike Fence": { path: "Path 6", items: ["Wooden Fence", "Spikes"] },
+
+      // Path 7
+      "Mystic Wall Panel": { path: "Path 7", items: ["Dungeon Wall", "Mystical Block"] },
+      "Mystic Statue": { path: "Path 7", items: ["Spikes", "Mystical Block"] },
+      "Steel Block": { path: "Path 7", items: ["Steel Platform", "Steel Gateway"] },
+      "Bookshelf": { path: "Path 7", items: ["Wooden Chest", "Couch"] },
+      "Camping Tent": { path: "Path 7", items: ["Fireplace", "Couch"] },
+      "Magic Cauldron": { path: "Path 7", items: ["Fireplace", "Mystical Portal"] },
+      "Bridge": { path: "Path 7", items: ["Stairs", "Arrow Path Finder"] },
+      "Neon Light": { path: "Path 7", items: ["Bulletin Sign Board", "Hanging Lantern"] },
+      "Wall Clock": { path: "Path 7", items: ["Display Frame", "Hanging Lantern"] },
+
+      // 3-Way Splice
+      "Jade Block": { path: "3-Way", items: ["Lily Pad", "Arrow Path Finder", "??? (Unknown)"], note: "73.5% Emerald", type: "eme" }
+    };
+
+    let selectedItem = "Wooden Chest";
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;");
+    }
+
+    function getBaseMaterials(item, qty, acc) {
+      if (!acc) acc = {};
+      const recipe = RECIPES[item];
+      if (!recipe) {
+        acc[item] = (acc[item] || 0) + qty;
+        return acc;
+      }
+      for (let i = 0; i < recipe.items.length; i++) {
+        getBaseMaterials(recipe.items[i], qty, acc);
+      }
+      return acc;
+    }
+
+    function buildTreeHTML(item, qty) {
+      const recipe = RECIPES[item];
+      if (!recipe) {
+        return "<li><strong>" + qty + "x</strong> " + escapeHtml(item) + ' <span style="color:#94a3b8">(Base / Unmapped)</span></li>';
+      }
+      const pathTag = recipe.path
+        ? ' <span style="color:#38bdf8;font-size:0.78rem">[' + escapeHtml(recipe.path) + "]</span>"
+        : "";
+      const children = recipe.items.map(function(ing) {
+        return buildTreeHTML(ing, qty);
+      }).join("");
+      return "<li><strong>" + qty + "x " + escapeHtml(item) + "</strong>" + pathTag + "<ul>" + children + "</ul></li>";
+    }
+
+    function renderCalculator() {
+      const qtyInput = document.getElementById("qtyInput");
+      const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+      const data = RECIPES[selectedItem];
+      const pathBadge = data && data.path
+        ? '<span class="badge badge-path">' + escapeHtml(data.path) + "</span>"
+        : "";
+
+      document.getElementById("selectedTitle").innerHTML =
+        "<span>" + qty + "x " + escapeHtml(selectedItem) + "</span>" + pathBadge;
+
+      const bases = getBaseMaterials(selectedItem, qty, {});
+      const baseList = document.getElementById("baseSummary");
+      baseList.innerHTML = Object.entries(bases)
+        .sort(function(a, b) { return b[1] - a[1]; })
+        .map(function(pair) {
+          return "<li><span>" + escapeHtml(pair[0]) + '</span><span class="count">' + pair[1] + "x</span></li>";
+        })
+        .join("");
+
+      document.getElementById("treeView").innerHTML = "<ul>" + buildTreeHTML(selectedItem, qty) + "</ul>";
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById("recipeGrid");
+      const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const selectedPath = document.getElementById("pathFilter").value;
+
+      const entries = Object.entries(RECIPES)
+        .sort(function(a, b) { return a[0].localeCompare(b[0]); })
+        .filter(function(pair) {
+          const name = pair[0];
+          const data = pair[1];
+          const matchesText = name.toLowerCase().indexOf(q) !== -1 ||
+            data.items.some(function(i) { return i.toLowerCase().indexOf(q) !== -1; });
+          const matchesPath = selectedPath === "ALL" || data.path === selectedPath;
+          return matchesText && matchesPath;
+        });
+
+      grid.innerHTML = entries.map(function(pair) {
+        const name = pair[0];
+        const data = pair[1];
+        const pathBadge = data.path
+          ? '<span class="badge badge-path">' + escapeHtml(data.path) + "</span>"
+          : "";
+        const noteBadge = data.note
+          ? '<span class="badge ' + (data.type === "eme" ? "badge-eme" : "badge-time") + '">' + escapeHtml(data.note) + "</span>"
+          : "";
+        const activeClass = name === selectedItem ? " active" : "";
+        return (
+          '<div class="card' + activeClass + '" data-item="' + escapeHtml(name) + '">' +
+            '<div class="item-name"><span>' + escapeHtml(name) + '</span><div class="badges">' + pathBadge + noteBadge + "</div></div>" +
+            '<div class="ingredients">' + escapeHtml(data.items.join(" + ")) + "</div>" +
+          "</div>"
+        );
+      }).join("");
+    }
+
+    document.getElementById("recipeGrid").addEventListener("click", function(e) {
+      const card = e.target.closest(".card");
+      if (!card) return;
+      selectedItem = card.getAttribute("data-item");
+      renderCalculator();
+      renderGrid();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    document.getElementById("searchInput").addEventListener("input", renderGrid);
+    document.getElementById("pathFilter").addEventListener("change", renderGrid);
+    document.getElementById("qtyInput").addEventListener("input", renderCalculator);
+
+    renderCalculator();
+    renderGrid();
+  </script>
+</body>
+</html>
